@@ -72,11 +72,14 @@ private:
 
     int totalBuckets;
     string id;
-    ScopeTable *parentScope;
     SymbolInfo **table;
 
+    int childNum; // This is used to track the scopeTables childs so that we can
+                  // create the id;
 public:
-    ScopeTable(string id, int totalBuckets)
+    ScopeTable *parentScope;
+
+    ScopeTable(string id, int totalBuckets, ScopeTable *parentScope = NULL)
     {
         this->id = id;
         this->totalBuckets = totalBuckets;
@@ -85,6 +88,8 @@ public:
         {
             table[i] = NULL;
         }
+        this->parentScope = parentScope;
+        childNum = 0;
     }
 
     ~ScopeTable()
@@ -95,6 +100,16 @@ public:
         }
 
         delete[] table;
+    }
+
+    void childAdded()
+    {
+        childNum++;
+    }
+
+    int getChildNum()
+    {
+        return childNum;
     }
     string getId()
     {
@@ -108,16 +123,6 @@ public:
     int getTotalBuckets()
     {
         return totalBuckets;
-    }
-
-    ScopeTable *getParentScope()
-    {
-        return parentScope;
-    }
-
-    void setParentScope(ScopeTable *p)
-    {
-        this->parentScope = p;
     }
 
     SymbolInfo *lookUp(string name)
@@ -207,6 +212,95 @@ public:
                 tmp = tmp->getNext();
             }
             cout << endl;
+        }
+    }
+};
+
+class SymbolTable
+{
+    ScopeTable *cur;
+    int totalBuckets;
+
+    void deleteRecur(ScopeTable *table)
+    {
+        if (table == NULL)
+        {
+            return;
+        }
+
+        deleteRecur(table->parentScope);
+        delete table;
+    }
+
+public:
+    SymbolTable(int totalBuckets)
+    {
+        this->totalBuckets = totalBuckets;
+        cur = new ScopeTable("1", totalBuckets);
+    }
+
+    ~SymbolTable()
+    {
+        deleteRecur(cur);
+    }
+
+    void enterScope()
+    {
+        cur->childAdded();
+        string id = cur->getId() + "." + to_string(cur->getChildNum());
+        cur = new ScopeTable(id, totalBuckets, cur);
+    }
+
+    void exitScope()
+    {
+        if (cur->parentScope == NULL)
+        {
+            return;
+        }
+
+        ScopeTable *tmp = cur;
+        cur = cur->parentScope;
+        delete (tmp);
+    }
+
+    bool insert(string name, string type)
+    {
+        return cur->insert(name, type);
+    }
+
+    bool remove(string name)
+    {
+        return cur->Delete(name);
+    }
+
+    SymbolInfo *lookUp(string name)
+    {
+        ScopeTable *tmp = cur;
+        while (tmp)
+        {
+            SymbolInfo *symbol = tmp->lookUp(name);
+            if (symbol != NULL)
+            {
+                return symbol;
+            }
+            tmp = tmp->parentScope;
+        }
+
+        return NULL;
+    }
+
+    void printCurScopeTable()
+    {
+        cur->print();
+    }
+
+    void printAllScopeTable()
+    {
+        ScopeTable *tmp = cur;
+        while (tmp)
+        {
+            tmp->print();
+            tmp = tmp->parentScope;
         }
     }
 };
