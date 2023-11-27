@@ -94,6 +94,7 @@ public:
 
     ~ScopeTable()
     {
+        cout << "\tScopeTable# " << id << " deleted" << endl;
         for (int i = 0; i < totalBuckets; i++)
         {
             deleteRecur(table[i]);
@@ -125,29 +126,43 @@ public:
         return totalBuckets;
     }
 
-    SymbolInfo *lookUp(string name)
+    SymbolInfo *lookUp(string name, bool print = false)
     {
         int index = hash(name); // %totalBuckets is being done inside the hash function
         SymbolInfo *tmp = table[index];
+        int i = 1;
         while (tmp)
         {
             if (tmp->getName() == name)
             {
+                if (print)
+                {
+                    cout << "\t\'" << name << "\' found at position <" << index + 1 << ", "
+                         << i << "> of ScopeTable# " << id << endl;
+                }
                 return tmp;
             }
 
             tmp = tmp->getNext();
+            i++;
         }
 
         return NULL;
     }
 
-    bool insert(string name, string type)
+    bool insert(string name, string type, bool print = false)
     {
         int index = hash(name); // %totalBuckets is being done inside the hash function
+
+        int i = 1;
         if (table[index] == NULL)
         {
             table[index] = new SymbolInfo(name, type);
+            if (print)
+            {
+                cout << "\tInserted  at position <" << index + 1 << ", "
+                     << i << "> of ScopeTable# " << id << endl;
+            }
             return true;
         }
 
@@ -156,29 +171,50 @@ public:
         {
             if (tmp->getName() == name)
             {
+                if (print)
+                {
+                    cout << "\t\'" << name << "\' already exists in the current ScopeTable# " << id << endl;
+                }
                 return false;
             }
             if (tmp->getNext() == NULL)
             {
                 tmp->setNext(new SymbolInfo(name, type));
+                if (print)
+                {
+                    cout << "\tInserted  at position <" << index + 1 << ", "
+                         << ++i << "> of ScopeTable# " << id << endl;
+                }
                 return true;
             }
             tmp = tmp->getNext();
+            i++;
         }
     }
 
-    bool Delete(string name)
+    bool Delete(string name, bool print = false)
     {
         int index = hash(name); // %totalBuckets is being done inside the hash function
         if (table[index] == NULL)
         {
+            if (print)
+            {
+                cout << "\tNot found in the current ScopeTable# " << id << endl;
+            }
             return false;
         }
+
+        int i = 1;
         if (table[index]->getName() == name)
         {
             SymbolInfo *tmp = table[index];
             table[index] = tmp->getNext();
             delete tmp;
+            if (print)
+            {
+                cout << "\tDeleted \'" << name << "\' from position <" << index + 1 << ", "
+                     << i << "> of ScopeTable# " << id << endl;
+            }
             return true;
         }
 
@@ -190,17 +226,24 @@ public:
             {
                 parent->setNext(child->getNext());
                 delete child;
+                cout << "\tDeleted \'" << name << "\' from position <" << index + 1 << ", "
+                     << ++i << "> of ScopeTable# " << id << endl;
                 return true;
             }
             parent = child;
+            i++;
         }
 
+        if (print)
+        {
+            cout << "\tNot found in the current ScopeTable# " << id << endl;
+        }
         return false;
     }
 
     void print()
     {
-        cout << "\tScopeTable# " << id << " created" << endl;
+        cout << "\tScopeTable# " << id << endl;
         for (int i = 0; i < totalBuckets; i++)
         {
             cout << "\t" << i + 1;
@@ -233,52 +276,76 @@ class SymbolTable
     }
 
 public:
-    SymbolTable(int totalBuckets)
+    SymbolTable(int totalBuckets, bool print = false)
     {
         this->totalBuckets = totalBuckets;
         cur = new ScopeTable("1", totalBuckets);
+        if (print)
+        {
+            cout << "\tScopeTable# 1 created" << endl;
+        }
     }
 
     ~SymbolTable()
     {
-        deleteRecur(cur);
+        ScopeTable *tmp = cur;
+        while (tmp != NULL)
+        {
+            ScopeTable *tmp1 = tmp->parentScope;
+            delete tmp;
+            tmp = tmp1;
+        }
     }
 
-    void enterScope()
+    void enterScope(bool print = false)
     {
         cur->childAdded();
         string id = cur->getId() + "." + to_string(cur->getChildNum());
         cur = new ScopeTable(id, totalBuckets, cur);
+
+        if (print)
+        {
+            cout << "\tScopeTable# " << id << " created" << endl;
+        }
     }
 
-    void exitScope()
+    void exitScope(bool print = false)
     {
         if (cur->parentScope == NULL)
         {
+            if (print)
+            {
+                cout << "\tScopeTable# 1 cannot be deleted" << endl;
+            }
             return;
         }
+
+        // if (print)
+        // {
+        //     cout << "\tScopeTable# " << cur->getId() << " deleted" << endl;
+        // }
 
         ScopeTable *tmp = cur;
         cur = cur->parentScope;
         delete (tmp);
     }
 
-    bool insert(string name, string type)
+    bool insert(string name, string type, bool print = false)
     {
-        return cur->insert(name, type);
+        return cur->insert(name, type, print);
     }
 
-    bool remove(string name)
+    bool remove(string name, bool print = false)
     {
-        return cur->Delete(name);
+        return cur->Delete(name, print);
     }
 
-    SymbolInfo *lookUp(string name)
+    SymbolInfo *lookUp(string name, bool print = false)
     {
         ScopeTable *tmp = cur;
         while (tmp)
         {
-            SymbolInfo *symbol = tmp->lookUp(name);
+            SymbolInfo *symbol = tmp->lookUp(name, print);
             if (symbol != NULL)
             {
                 return symbol;
@@ -286,6 +353,10 @@ public:
             tmp = tmp->parentScope;
         }
 
+        if (print)
+        {
+            cout << "\t\'" << name << "\' not found in any of the ScopeTables" << endl;
+        }
         return NULL;
     }
 
