@@ -1,5 +1,5 @@
 #include <iostream>
-#include "SymbolTable.h"
+#include "2005077_SymbolTable.h"
 
 #define TOKEN_SIZE 100;
 
@@ -23,7 +23,7 @@ int tokenize(string s, string del, string tokens[])
 int main(void)
 {
     freopen("input.txt", "r", stdin);
-    freopen("output.txt", "w", stdout);
+    freopen("2005077_output.txt", "w", stdout);
 
     int totalBuckets;
     cin >> totalBuckets;

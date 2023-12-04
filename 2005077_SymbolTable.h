@@ -50,10 +50,10 @@ public:
 class ScopeTable
 {
 private:
-    unsigned long hash(const string &str)
+    unsigned long long hash(const string &str)
     {
         // Using sdbm hash
-        unsigned long hash = 0;
+        unsigned long long hash = 0;
         for (char c : str)
         {
             hash = c + (hash << 6) + (hash << 16) - hash;
